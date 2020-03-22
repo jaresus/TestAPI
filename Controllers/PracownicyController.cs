@@ -25,7 +25,7 @@ namespace TestAPI.Controllers
         public async Task<ActionResult<IEnumerable<Pracownik>>> GetPracownicy()
         {
             return await context.Pracownicy
-                //.Include(p => p.Wydzial.Nazwa)
+                .Include(p => p.Wydzial)
                 .ToListAsync();
         }
 
@@ -33,13 +33,15 @@ namespace TestAPI.Controllers
         [HttpGet("{id}")]
         public async Task<ActionResult<Pracownik>> GetPracownik(int id)
         {
-            var pracownik = await context.Pracownicy.FindAsync(id);
+            var pracownik = await context.Pracownicy
+                .Include(p => p.Wydzial)
+                .Where(p => p.ID == id).FirstOrDefaultAsync();
 
             if (pracownik == null)
             {
                 return NotFound();
             }
-
+            Console.WriteLine(pracownik.ToString());
             return pracownik;
         }
 
@@ -83,7 +85,8 @@ namespace TestAPI.Controllers
         {
             context.Pracownicy.Add(pracownik);
             await context.SaveChangesAsync();
-
+            var wydzial = context.Wydzialy.Where(w=>w.ID==pracownik.WydzialID).FirstOrDefault();
+            pracownik.Wydzial=wydzial;
             return CreatedAtAction("GetPracownik", new { id = pracownik.ID }, pracownik);
         }
 

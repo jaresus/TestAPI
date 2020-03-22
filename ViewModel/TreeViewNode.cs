@@ -7,9 +7,9 @@ namespace MatrycaKwalifikacji.ViewModels
 {
     public class TreeViewNode
     {
-        public int id { get; set; }
-        public string parent { get; set; }
-        public string text { get; set; }
+        public int Id { get; set; }
+        public string Parent { get; set; }
+        public string Text { get; set; }
         public string IsBrygada { get; set; }
 
     }

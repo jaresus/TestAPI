@@ -54,8 +54,8 @@ namespace TestAPI.Controllers
             {
                 return BadRequest();
             }
-
             context.Entry(kwalifikacja).State = EntityState.Modified;
+            
 
             try
             {
@@ -72,7 +72,21 @@ namespace TestAPI.Controllers
                     throw;
                 }
             }
-
+            //usuń poprzednie
+            var usun=context.KwalifikacjeWydzialy.Where(kw => kw.KwalifikacjaID == kwalifikacja.ID);
+            context.KwalifikacjeWydzialy.RemoveRange(usun);
+            context.SaveChanges();
+            // dodaj nowe
+            var kWydzial = kwalifikacja.KwalifikacjaWydzial.Select(r => r.WydzialID).ToArray();
+            var kwalifikacjaWydzial = context.Wydzialy.Where(w => kWydzial.Contains(w.ID))
+                .Select(q => new KwalifikacjaWydzial
+                {
+                    WydzialID = q.ID,
+                    KwalifikacjaID=kwalifikacja.ID,
+                    Wydzial = q
+                }).ToArray();
+            context.KwalifikacjeWydzialy.AddRange(kwalifikacjaWydzial);
+            await context.SaveChangesAsync();
             return NoContent();
         }
 
@@ -82,7 +96,17 @@ namespace TestAPI.Controllers
         [HttpPost]
         public async Task<ActionResult<Kwalifikacja>> PostKwalifikacja(Kwalifikacja kwalifikacja)
         {
-            context.Kwalifikacje.Add(kwalifikacja);
+            var kWydzial = kwalifikacja.KwalifikacjaWydzial.Select(r => r.WydzialID).ToArray();
+            kwalifikacja.KwalifikacjaWydzial = null;
+            var k = context.Kwalifikacje.Add(kwalifikacja);
+            await context.SaveChangesAsync();
+            var kwalifikacjaWydzial = context.Wydzialy.Where(w => kWydzial.Contains(w.ID))
+                .Select(q => new KwalifikacjaWydzial {
+                    WydzialID = q.ID,
+                    KwalifikacjaID=kwalifikacja.ID,
+                    Wydzial = q
+                });
+            context.KwalifikacjeWydzialy.AddRange(kwalifikacjaWydzial);
             await context.SaveChangesAsync();
 
             return CreatedAtAction("GetKwalifikacja", new { id = kwalifikacja.ID }, kwalifikacja);

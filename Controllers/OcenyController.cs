@@ -3,12 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Mime;
 using System.Threading.Tasks;
-using MatrycaKwalifikacji.ViewModels;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
+using System.IO;
 using Microsoft.AspNetCore.Mvc;
+using MatrycaKwalifikacji.ViewModels;
+
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+
 using TestAPI.Models;
+using NPOI.XSSF.UserModel;
+using NPOI.SS.UserModel;
+using System.Data;
 
 namespace TestAPI.Controllers
 {
@@ -24,6 +29,105 @@ namespace TestAPI.Controllers
         {
             this.context = context;
             this.userManager = userManager;
+        }
+        private class NpoiMemoryStream : MemoryStream
+        {
+            public NpoiMemoryStream()
+            {
+                // We always want to close streams by default to
+                // force the developer to make the conscious decision
+                // to disable it.  Then, they're more apt to remember
+                // to re-enable it.  The last thing you want is to
+                // enable memory leaks by default.  ;-)
+                AllowClose = true;
+            }
+            public bool AllowClose { get; set; }
+
+            public override void Close()
+            {
+                if (AllowClose)
+                    base.Close();
+            }
+        }
+
+        [HttpGet("download")]
+        public async Task<FileStreamResult> Download()
+        {
+            using (var fs = new NpoiMemoryStream())
+            {
+                fs.AllowClose = false;
+                IWorkbook workbook = new XSSFWorkbook();
+                ISheet excelSheet = workbook.CreateSheet("Zestawienie");
+
+                List<String> columns = new List<string>();
+                IRow row = excelSheet.CreateRow(0);
+                int columnIndex = 0;
+
+                foreach (var r in new List<string> { "aaa", "bbb", "ccc", "ddd", "zzz" })
+                {
+                    columns.Add(r);
+                    row.CreateCell(columnIndex).SetCellValue(r);
+                    columnIndex++;
+                }
+
+                int rowIndex = 1;
+                foreach (var t in new List<string> { "qq", "ww", "ee" })
+                {
+                    row = excelSheet.CreateRow(rowIndex);
+                    int cellIndex = 0;
+                    foreach (String col in columns)
+                    {
+                        row.CreateCell(cellIndex).SetCellValue(t.ToString());
+                        cellIndex++;
+                    }
+
+                    rowIndex++;
+                }
+                workbook.Write(fs);
+                fs.Flush();
+                fs.Seek(0, SeekOrigin.Begin);
+                
+                return new FileStreamResult(fs, "application/ms-excel")
+                {
+                    FileDownloadName = "Report.xlsx",
+                };
+            }
+        }
+
+
+
+        // GET: api/Oceny/detail/id
+        [HttpGet("detail/{id}")]
+        public async Task<ActionResult<IEnumerable<IKwalifikacjaOcenyAPI>>> GetDetails(int id)
+        {
+            var oceny = await context.Kwalifikacje
+                .Include(w =>w.KwalifikacjaWydzial)
+                .ThenInclude(w => w.Wydzial)
+                .Include(o => o.Oceny)
+                .Select(o => new IKwalifikacjaOcenyAPI
+                {
+                    ID = o.ID,
+                    Nazwa = o.Nazwa,
+                    Wydzialy = o.KwalifikacjaWydzial.Select(w => new IWydzialKwalifikacjaAPI
+                    {
+                        IDw=w.WydzialID,
+                        Nazwa=w.Wydzial.Nazwa
+                    }).ToArray(),
+                    Oceny = o.Oceny.Where(q=> q.PracownikID == id)
+                     .Select(d => new IDKwalifikacjaOcenaAPI
+                     {
+                         ID = d.ID,
+                         K = d.KwalifikacjaID,
+                         O = d.OcenaV,
+                         Od =d.DataOd,
+                         Do = d.DataDo.Value,
+                         S = d.StemelCzasu,
+                         Kom = d.Komentarz,
+                         WID = d.WprowadzajacyID
+                     }).ToArray()
+                })
+                .ToListAsync();
+            return oceny;
         }
 
         // GET: api/Oceny
@@ -46,7 +150,7 @@ namespace TestAPI.Controllers
 
             return ocena;
         }
-        // GET: api/Oceny/5
+        // GET: api/Oceny/byDepartment/?
         [HttpGet("byDepartment")]
         public async Task<ActionResult<IEnumerable<OcenaListaAPI>>> GetOcenybyDepartment([FromQuery] int[] p, [FromQuery] int[] k)
         {
@@ -71,11 +175,12 @@ namespace TestAPI.Controllers
                     NrPersonalny = p.NrPersonalny,
                     Pracownik = p.Nazwisko + ", " + p.Imie,
                     Test = p.Oceny.Count(),
-                    KompetencjaOcena = p.Oceny
+                    KwalifikacjaOcena = p.Oceny
                         .Where(o => o.DataDo.Value.Year == 9999)
                         //.Where(o => listaKwalifikacji.Contains(o.KwalifikacjaID))
-                        .Select(o => new IDKompetencjaOcenaAPI
+                        .Select(o => new IDKwalifikacjaOcenaAPI
                         {
+                            ID = o.ID,
                             K = o.KwalifikacjaID,
                             O = o.OcenaV,
                             Od = o.DataOd,
@@ -164,7 +269,7 @@ namespace TestAPI.Controllers
                 transaction.Commit();
                 //wyślij maila
                 return CreatedAtAction("GetOcena", new { id = model.ID }, model);
-            } 
+            }
             return BadRequest();
         }
 
@@ -177,12 +282,21 @@ namespace TestAPI.Controllers
             var ocena = await context.Oceny.FindAsync(id);
             if (ocena == null)
             {
-                return NotFound();
+                return NotFound("Nie znaleziono");
             }
 
             context.Oceny.Remove(ocena);
             await context.SaveChangesAsync();
+            //znajdź następną ocenę
+            //var oceny = context.Oceny.Where(o =>
+            //    o.KwalifikacjaID == ocena.KwalifikacjaID
+            //    && o.PracownikID == ocena.PracownikID
+            //  );
+            //foreach (Ocena i in oceny)
+            //{
 
+            //}
+            //znajdź poprzednia
             return ocena;
         }
 

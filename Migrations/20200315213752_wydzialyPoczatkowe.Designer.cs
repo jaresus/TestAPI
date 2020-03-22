@@ -3,15 +3,17 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TestAPI.Models;
 
 namespace TestAPI.Migrations
 {
     [DbContext(typeof(AuthenticationContext))]
-    partial class AuthenticationContextModelSnapshot : ModelSnapshot
+    [Migration("20200315213752_wydzialyPoczatkowe")]
+    partial class wydzialyPoczatkowe
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

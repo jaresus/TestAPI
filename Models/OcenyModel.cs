@@ -60,6 +60,7 @@ namespace TestAPI.Models
         public int Position { get; set; }
         public bool IsBrygada { get; set; }
         public ICollection<Kwalifikacja> Kwalifikacje { get; set; }
+        [JsonIgnore]
         public ICollection<Pracownik> Pracownicy { get; set; }
         [JsonIgnore]
         public IList<KwalifikacjaWydzial> KwalifikacjaWydzial { get; set; }

@@ -15,7 +15,7 @@ namespace TestAPI.Models
         public DbSet<Pracownik> Pracownicy { get; set; }
         public DbSet<Wydzial> Wydzialy { get; set; }
         public DbSet<KwalifikacjaWydzial> KwalifikacjeWydzialy { get; set; }
-
+        public DbSet<PoczatkoweWydzialy> PoczatkoweWydzialy { get; set; }
 
         public AuthenticationContext(DbContextOptions options) : base(options)
         {
