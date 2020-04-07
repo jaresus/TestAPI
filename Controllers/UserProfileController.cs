@@ -1,29 +1,44 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using TestAPI.Models;
 
 namespace TestAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+
     public class UserProfileController : ControllerBase
     {
         private UserManager<ApplicationUser> userManager;
         private readonly AuthenticationContext context;
+        private ILogger<UserProfileController> logger;
         const string cWydzial = "Wydzial";
         const string cKwalifikacja = "Kwalifikacja";
 
-        public UserProfileController(UserManager<ApplicationUser> userManager, AuthenticationContext context)
+        public UserProfileController(UserManager<ApplicationUser> userManager,
+            AuthenticationContext context,
+            ILogger<UserProfileController> logger)
         {
             this.userManager = userManager;
             this.context=context;
+            this.logger = logger;
         }
-
+        [HttpGet("InfoLastOperation{WprowadzajacyID}")]
+        //GET : /api/UserProfile/InfoLastOperation
+        public async Task<ActionResult<Object>> InfoLastOperation(string WprowadzajacyID)
+        {
+            var oceny = await context.Oceny.Where(o => o.WprowadzajacyID == WprowadzajacyID)
+                .OrderByDescending(o => o.StemelCzasu).FirstOrDefaultAsync();
+            oceny.Kwalifikacja = await context.Kwalifikacje.FirstOrDefaultAsync(k => k.ID == oceny.KwalifikacjaID);
+            oceny.Pracownik = await context.Pracownicy.FirstOrDefaultAsync(p => p.ID == oceny.PracownikID);
+            return oceny;
+        }
 
         [HttpPut("{id}")]
         //PUT : /api/UserProfile/id
@@ -138,14 +153,23 @@ namespace TestAPI.Controllers
             return await Profile(id);
         }
 
-        
+
 
         private async Task<ActionResult<UserModelProfil>> Profile(string id)
         {
             var user = await userManager.FindByIdAsync(id);
             var roles = await userManager.GetRolesAsync(user);
-            var poczWydz = context.PoczatkoweWydzialy.Where(w => w.UserID == user.Id && w.Typ ==cWydzial).Select(w => w.WydzialID).ToArray();
-            var poczKwal = context.PoczatkoweWydzialy.Where(w => w.UserID == user.Id && w.Typ ==cKwalifikacja).Select(w => w.WydzialID).ToArray();
+            foreach (var r in roles)
+            {
+                Console.WriteLine(r.ToString());
+                logger.LogWarning(r);
+            };
+            var poczWydz = context.PoczatkoweWydzialy.Where(w => w.UserID == user.Id && w.Typ ==cWydzial)
+                .AsEnumerable().Select(w => w.WydzialID).ToArray();
+            var poczKwal = context.PoczatkoweWydzialy.Where(w => w.UserID == user.Id && w.Typ ==cKwalifikacja)
+                .AsEnumerable().Select(w => w.WydzialID).ToArray();
+            var w = context.Wydzialy.AsEnumerable().Where(w => poczWydz.Contains(w.ID)).ToArray();
+            var k = context.Wydzialy.AsEnumerable().Where(w => poczKwal.Contains(w.ID)).ToArray();
             return new UserModelProfil()
             {
                 Id=id,
@@ -153,8 +177,8 @@ namespace TestAPI.Controllers
                 FullName=user.FullName,
                 Email = user.Email,
                 Role=roles.ToArray(),
-                PoczatkoweWydzialy = context.Wydzialy.Where(w => poczWydz.Contains(w.ID)).ToArray(),
-                PoczatkoweKwalifikacje = context.Wydzialy.Where(w => poczKwal.Contains(w.ID)).ToArray()
+                PoczatkoweWydzialy = w,
+                PoczatkoweKwalifikacje = k
             };
         }
 
@@ -217,9 +241,9 @@ namespace TestAPI.Controllers
             var poczKwalAdd = missKwal
                 .Select(k => new PoczatkoweWydzialy
                 {
-                    Typ=cKwalifikacja,
-                    UserID = oldUser.Id,
-                    WydzialID= k
+                    Typ       = cKwalifikacja,
+                    UserID    = oldUser.Id,
+                    WydzialID = k
                 });
             context.PoczatkoweWydzialy.AddRange(poczKwalAdd);
             await context.SaveChangesAsync();
@@ -227,8 +251,8 @@ namespace TestAPI.Controllers
             var surplusKwal =  poczKwal2.Except(poczKwal1);
             var poczKwalDelete = surplusKwal.Select(k => new PoczatkoweWydzialy
             {
-                Typ = cKwalifikacja,
-                UserID = oldUser.Id,
+                Typ       = cKwalifikacja,
+                UserID    = oldUser.Id,
                 WydzialID = k
             });
             context.PoczatkoweWydzialy.RemoveRange(poczKwalDelete);
@@ -241,27 +265,32 @@ namespace TestAPI.Controllers
 
         [HttpGet("UserProfiles")]
         //[Authorize]
-        //GET : /api/UserProfile
+        //GET : /api/UserProfiles
         //[Route("UserProfiles")]
         public async Task<ActionResult<UserModelProfil[]>> GetUserProfiles()
         {
-            var users = userManager.Users.Select(u => new UserModelProfil
+            var wydzialy         = context.Wydzialy.ToList();
+            var poczWydzialy     = context.PoczatkoweWydzialy.Where(w => w.Typ == cWydzial).ToList();
+            var poczKwalifikacje = context.PoczatkoweWydzialy.Where(k => k.Typ == cKwalifikacja).ToList();
+
+            var users = userManager.Users.ToList();
+            var model = users.Select(u => new UserModelProfil
             {
-                Id=u.Id,
-                Email=u.Email,
-                FullName=u.FullName,
-                UserName=u.UserName,
-                Role= userManager.GetRolesAsync(u).Result.ToArray(),
-                PoczatkoweWydzialy=context.Wydzialy
-                  .Where(w => context.PoczatkoweWydzialy
-                    .Where(p => p.UserID == u.Id && p.Typ == cWydzial)
-                    .Select(q=> q.WydzialID).Contains(w.ID)).ToArray(),
-                PoczatkoweKwalifikacje = context.Wydzialy
-                  .Where(w => context.PoczatkoweWydzialy
-                    .Where(p => p.UserID == u.Id && p.Typ == cKwalifikacja)
-                    .Select(q=> q.WydzialID).Contains(w.ID)).ToArray()
+                Id                 = u.Id,
+                Email              = u.Email,
+                FullName           = u.FullName,
+                UserName           = u.UserName,
+                Role               = userManager.GetRolesAsync(u).Result.ToArray(),
+                PoczatkoweWydzialy = wydzialy
+                      .Where(w =>
+                        poczWydzialy.Where(p => p.UserID == u.Id).Select(q => q.WydzialID).Contains(w.ID))
+                      .ToArray(),
+                PoczatkoweKwalifikacje = wydzialy
+                      .Where(w =>
+                        poczKwalifikacje.Where(k => k.UserID == u.Id).Select(q=> q.WydzialID).Contains(w.ID))
+                      .ToArray()
             });
-            return Ok(users);
+            return Ok(model);
         }
 
         [HttpGet]

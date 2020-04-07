@@ -83,6 +83,7 @@ namespace TestAPI.Controllers
         [HttpPost]
         public async Task<ActionResult<Pracownik>> PostPracownik(Pracownik pracownik)
         {
+            pracownik.ID=0;
             context.Pracownicy.Add(pracownik);
             await context.SaveChangesAsync();
             var wydzial = context.Wydzialy.Where(w=>w.ID==pracownik.WydzialID).FirstOrDefault();

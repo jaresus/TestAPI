@@ -2,6 +2,10 @@
   "iisSettings": {
     "windowsAuthentication": true,
     "anonymousAuthentication": true,
+    "iis": {
+      "applicationUrl": "http://localhost/TestAPI",
+      "sslPort": 0
+    },
     "iisExpress": {
       "applicationUrl": "http://localhost:54778",
       "sslPort": 0
@@ -18,12 +22,11 @@
     },
     "TestAPI": {
       "commandName": "Project",
-      "launchBrowser": false,
-      "launchUrl": "weatherforecast",
+      "launchUrl": "/api",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "release"
       },
-      "applicationUrl": "http://localhost:54778"
+      "applicationUrl": "http://localhost:5000"
     }
   }
 }

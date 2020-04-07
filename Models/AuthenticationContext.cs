@@ -1,5 +1,7 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -42,6 +44,49 @@ namespace TestAPI.Models
                 .HasOne<Wydzial>(kw => kw.Wydzial)
                 .WithMany(s => s.KwalifikacjaWydzial)
                 .HasForeignKey(kw => kw.WydzialID);
+
+            #region debian MariaDB
+            // Shorten key length for Identity
+            // gdy nie skrócone rozmiary pól to powstawał błąd na debian mariadb
+            modelBuilder.Entity<ApplicationUser>(entity => entity.Property(m => m.Id).HasMaxLength(85));
+            modelBuilder.Entity<ApplicationUser>(entity => entity.Property(m => m.NormalizedEmail).HasMaxLength(85));
+            modelBuilder.Entity<ApplicationUser>(entity => entity.Property(m => m.NormalizedUserName).HasMaxLength(85));
+
+            modelBuilder.Entity<IdentityRole>(entity => entity.Property(m => m.Id).HasMaxLength(85));
+            modelBuilder.Entity<IdentityRole>(entity => entity.Property(m => m.NormalizedName).HasMaxLength(85));
+
+            modelBuilder.Entity<IdentityUserLogin<string>>(entity =>
+            {
+                entity.Property(m => m.LoginProvider).HasMaxLength(85);
+                entity.Property(m => m.ProviderKey).HasMaxLength(85);
+                entity.Property(m => m.UserId).HasMaxLength(85);
+            });
+            modelBuilder.Entity<IdentityUserRole<string>>(entity =>
+            {
+                entity.Property(m => m.UserId).HasMaxLength(85);
+                entity.Property(m => m.RoleId).HasMaxLength(85);
+            });
+            modelBuilder.Entity<IdentityUserToken<string>>(entity =>
+            {
+                entity.Property(m => m.UserId).HasMaxLength(85);
+                entity.Property(m => m.LoginProvider).HasMaxLength(85);
+                entity.Property(m => m.Name).HasMaxLength(85);
+            });
+            modelBuilder.Entity<IdentityUserClaim<string>>(entity =>
+            {              
+                entity.Property(m => m.Id).HasMaxLength(85);
+                entity.Property(m => m.UserId).HasMaxLength(85);
+            });
+            modelBuilder.Entity<IdentityRoleClaim<string>>(entity => {
+                entity.Property(m => m.Id).HasMaxLength(85);
+                entity.Property(m => m.RoleId).HasMaxLength(85);
+            });
+            #endregion
         }
+
+        //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        //{
+        //    optionsBuilder.ConfigureWarnings(warnings => warnings.Throw(RelationalEventId.QueryClientEvaluationWarning));
+        //}
     }
 }

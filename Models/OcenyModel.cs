@@ -89,6 +89,7 @@ namespace TestAPI.Models
     }
     public class Pracownik
     {
+        [Key]
         public int ID { get; set; }
         [Display(Name = "Numer personalny")]
         public string NrPersonalny { get; set; }

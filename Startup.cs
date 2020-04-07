@@ -17,17 +17,24 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Mvc.NewtonsoftJson;
 using TestAPI.Models;
+using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.HttpOverrides;
+using System.Net;
 
 namespace TestAPI
 {
     public class Startup
     {
+        public IConfiguration Configuration { get; }
+
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
+           
         }
 
-        public IConfiguration Configuration { get; }
+
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
@@ -37,11 +44,33 @@ namespace TestAPI
             services.AddMvc()
                     .SetCompatibilityVersion(CompatibilityVersion.Version_3_0)
                     .AddNewtonsoftJson(opt => opt.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore); ;
-            
-            services.AddDbContext<AuthenticationContext>(options =>
-                options.UseSqlServer(Configuration.GetConnectionString("IdentityConnection")));
 
 
+            //Wersja dla MariaDB
+            if (Environment.OSVersion.ToString().StartsWith("Unix"))
+            {
+                services.AddDbContext<AuthenticationContext>(options => options
+                    .UseMySql(Configuration.GetConnectionString("MariaDB_Unix"), mySqlOptions => mySqlOptions
+                        // replace with your Server Version and Type
+                        .ServerVersion(new Version(10, 1, 44), ServerType.MariaDb)));
+                Console.WriteLine("operating system Unix");
+                Console.WriteLine(Environment.OSVersion.ToString());
+                Console.WriteLine(Environment.UserName.ToString());
+                Console.WriteLine(Environment.UserDomainName.ToString());
+                Console.WriteLine(Environment.MachineName.ToString());
+                Console.WriteLine(Environment.CommandLine.ToString());
+
+            }
+            else
+            {
+                services.AddDbContext<AuthenticationContext>(options => options
+                    .UseMySql(Configuration.GetConnectionString("MariaDB_Windows"), mySqlOptions => mySqlOptions
+                        // replace with your Server Version and Type
+                        .ServerVersion(new Version(10, 4, 10), ServerType.MariaDb)));
+                Console.WriteLine("operating system Windows");
+                Console.WriteLine(Environment.OSVersion.ToString());
+
+            }
             services.AddIdentity<ApplicationUser, IdentityRole>()
                 .AddRoles<IdentityRole>()
                 .AddEntityFrameworkStores<AuthenticationContext>();
@@ -54,10 +83,22 @@ namespace TestAPI
                 options.Password.RequireUppercase = false;
                 options.Password.RequiredLength = 4;
             });
-            services.AddCors();
+            // using System.Net;
+            services.Configure<ForwardedHeadersOptions>(options =>
+            {
+                options.KnownProxies.Add(IPAddress.Parse("192.168.0.107:4200"));
+                options.KnownProxies.Add(IPAddress.Parse("192.168.0.108:4200"));
+                options.KnownProxies.Add(IPAddress.Parse("127.0.0.1:4200"));
+            });
 
+            //services.AddCors(o => o.AddPolicy("CorsPolicy", builder =>
+            //{
+            //    builder
+            //        .WithOrigins("http://127.0.0.1:4200", "http://192.168.0.108:4200" , "http://127.0.0.1")
+            //        .AllowAnyMethod()
+            //        .AllowAnyHeader();                    
+            //}));
             //Jwt Authentication
-
             var key = Encoding.UTF8.GetBytes(Configuration["ApplicationSettings:JWT_Secret"].ToString());
             services.AddAuthentication(x =>
             {
@@ -84,35 +125,93 @@ namespace TestAPI
         {
             app.Use(async (ctx, next) =>
             {
+                Console.Write("Jarek test");
                 await next();
                 if (ctx.Response.StatusCode == 204)
                 {
                     ctx.Response.ContentLength = 0;
                 }
             });
+            Console.WriteLine(env.EnvironmentName.ToString());
+            //przekierowanie nag³ówków -> aby dzia³a³o CORS
+            app.UseForwardedHeaders(new ForwardedHeadersOptions
+            {
+                ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+            });
+            app.Use(async (context, next) =>
+            {
+                // Request method, scheme, and path    
+                Console.WriteLine($"Request Method: {context.Request.Method}{Environment.NewLine}");
+                Console.WriteLine($"Request Scheme: {context.Request.Scheme}{Environment.NewLine}");
+                Console.WriteLine($"Request Path: {context.Request.Path}{Environment.NewLine}");
+                Console.WriteLine($"Request Headers:{Environment.NewLine}");
+                //logger.LogInformation($"Request Method: {context.Request.Method}{Environment.NewLine}");
+                //logger.LogInformation($"Request Scheme: {context.Request.Scheme}{Environment.NewLine}");
+                //logger.LogInformation($"Request Path: {context.Request.Path}{Environment.NewLine}");
+                //logger.LogInformation($"Request Headers:{Environment.NewLine}");
+                // Headers
+                foreach (var header in context.Request.Headers)
+                {
+                    Console.WriteLine($"{header.Key}: " + $"{header.Value}{Environment.NewLine}");
+                    //logger.LogInformation($"{header.Key}: " + $"{header.Value}{Environment.NewLine}");
+                }
+
+                // Connection: RemoteIp
+                Console.WriteLine($"Request RemoteIp: {context.Connection.RemoteIpAddress}");
+                //logger.LogInformation($"Request RemoteIp: {context.Connection.RemoteIpAddress}");
+                await next();
+            });
+            //app.Run(async (context) =>
+            //{
+            //    //context.Response.ContentType = "text/plain";
+            //    await context.Response.WriteAsync("kontrola ustawieñ");
+            //    // Request method, scheme, and path
+            //    await context.Response.WriteAsync($"Request Method: {context.Request.Method}{Environment.NewLine}");
+            //    Console.WriteLine($"Request Method: {context.Request.Method}{Environment.NewLine}");
+            //    await context.Response.WriteAsync($"Request Scheme: {context.Request.Scheme}{Environment.NewLine}");
+            //    Console.WriteLine($"Request Scheme: {context.Request.Scheme}{Environment.NewLine}");
+            //    await context.Response.WriteAsync($"Request Path: {context.Request.Path}{Environment.NewLine}");
+            //    Console.WriteLine($"Request Path: {context.Request.Path}{Environment.NewLine}");
+            //    // Headers
+            //    await context.Response.WriteAsync($"Request Headers:{Environment.NewLine}");
+            //    Console.WriteLine($"Request Headers:{Environment.NewLine}");
+            //    foreach (var header in context.Request.Headers)
+            //    {
+            //        await context.Response.WriteAsync($"{header.Key}: " + $"{header.Value}{Environment.NewLine}");
+            //        Console.WriteLine($"{header.Key}: " + $"{header.Value}{Environment.NewLine}");
+            //    }
+            //    await context.Response.WriteAsync(Environment.NewLine);
+            //    Console.WriteLine(Environment.NewLine);
+            //    // Connection: RemoteIp
+            //    await context.Response.WriteAsync($"Request RemoteIp: {context.Connection.RemoteIpAddress}");
+            //    Console.WriteLine($"Request RemoteIp: {context.Connection.RemoteIpAddress}");
+            //});
             app.UseCors(builder =>
             {
-                builder.WithOrigins(Configuration["ApplicationSettings:Client_URL"].ToString())
+                builder.WithOrigins(
+                    Configuration["ApplicationSettings:Client_URL"].ToString(),
+                    "http://192.168.0.107:4200",
+                    "http://192.168.0.108:4200",
+                    "http://192.168.0.120:4200",
+                    "http://127.0.0.1")
                 .AllowAnyHeader()
                 .AllowAnyMethod();
             }
             );
+            //app.UseCors("CorsPolicy");
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
-
-            app.UseHttpsRedirection();
-
+            //app.UseHttpsRedirection();
             app.UseRouting();
-
             app.UseAuthentication();
             app.UseAuthorization();
-
 
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+
             });
         }
     }
