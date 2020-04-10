@@ -269,11 +269,11 @@ namespace TestAPI.Controllers
         //[Route("UserProfiles")]
         public async Task<ActionResult<UserModelProfil[]>> GetUserProfiles()
         {
-            var wydzialy         = context.Wydzialy.ToList();
-            var poczWydzialy     = context.PoczatkoweWydzialy.Where(w => w.Typ == cWydzial).ToList();
-            var poczKwalifikacje = context.PoczatkoweWydzialy.Where(k => k.Typ == cKwalifikacja).ToList();
+            var wydzialy         = await context.Wydzialy.ToListAsync();
+            var poczWydzialy     = await context.PoczatkoweWydzialy.Where(w => w.Typ == cWydzial).ToListAsync();
+            var poczKwalifikacje = await context.PoczatkoweWydzialy.Where(k => k.Typ == cKwalifikacja).ToListAsync();
 
-            var users = userManager.Users.ToList();
+            var users = await userManager.Users.ToListAsync();
             var model = users.Select(u => new UserModelProfil
             {
                 Id                 = u.Id,

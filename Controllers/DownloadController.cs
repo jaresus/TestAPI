@@ -1,13 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
+
 using System.Linq;
-using System.Threading.Tasks;
+
 using DocumentFormat.OpenXml;
-using DocumentFormat.OpenXml.Packaging;
-using DocumentFormat.OpenXml.Spreadsheet;
-using Microsoft.AspNetCore.Http;
+
+
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using OpenXMLExcel.SLExcelUtility;
+using TestAPI.Models;
 
 namespace TestAPI.Controllers
 {
@@ -15,59 +17,92 @@ namespace TestAPI.Controllers
     [ApiController]
     public class DownloadController : ControllerBase
     {
-        [HttpGet]
-        public async Task<FileStreamResult> Download()
+        private readonly AuthenticationContext context;
+
+        public DownloadController(AuthenticationContext context)
         {
-            using (MemoryStream mem = new MemoryStream())
+            this.context=context;
+        }
+        [HttpGet]
+        public ActionResult DownloadFile(
+            [FromQuery] int[] skills = null,
+            [FromQuery] int[] departaments = null,
+            [FromQuery] bool RODO = true)
+        {
+            var data = new SLExcelData();
+            data.SheetName = "lista ocen";
+
+            data.Headers.Add("Dział");
+            data.Headers.Add("Nr osobowy");
+            data.Headers.Add("Pracownik");
+
+            IEnumerable<Kwalifikacja> kwalifikacje;
+            if (skills!=null)
             {
-                using (SpreadsheetDocument document = SpreadsheetDocument.Create(mem, SpreadsheetDocumentType.Workbook))
+                kwalifikacje = context.Kwalifikacje
+                    .Include(k => k.KwalifikacjaWydzial)
+                    .ThenInclude(w => w.Wydzial)
+                    .Where(k => k.KwalifikacjaWydzial.Any(w => skills.Contains(w.WydzialID)))
+                    .OrderBy(k => k.KwalifikacjaWydzial.FirstOrDefault().WydzialID);
+            }
+            else
+            {
+                kwalifikacje = context.Kwalifikacje
+                    .Include(k => k.KwalifikacjaWydzial)
+                    .ThenInclude(w => w.Wydzial)
+                    .OrderBy(k => k.KwalifikacjaWydzial.FirstOrDefault().WydzialID);
+            }
+            //sprawdzić!!!
+            foreach (var k in kwalifikacje)
+            {
+                data.Headers.Add(k.Nazwa);
+            }
+
+            //pracownicy
+            IEnumerable<Pracownik> pracownicy;
+            if (departaments!=null)
+            {
+                pracownicy = context.Pracownicy
+                    .Where(p => departaments.Contains(p.WydzialID))
+                    .Where(p => p.IsActive == true)
+                    .Include(p => p.Oceny)
+                    .Include(p => p.Wydzial)
+                    .OrderBy(p => p.Nazwisko)
+                    .ThenBy(p => p.Imie);
+            }
+            else
+            {
+                pracownicy = context.Pracownicy
+                    .Where(p => p.IsActive == true)
+                    .Include(p => p.Oceny)
+                    .Include(p => p.Wydzial)
+                    .OrderBy(p => p.Nazwisko)
+                    .ThenBy(p => p.Imie);
+            }
+
+            var r = new List<string>();
+            Ocena o;
+            foreach (var p in pracownicy)
+            {
+                if (p!=null)
                 {
-                    WorkbookPart workbookPart = document.AddWorkbookPart();
-                    workbookPart.Workbook = new Workbook();
-
-                    WorksheetPart worksheetPart = workbookPart.AddNewPart<WorksheetPart>();
-                    var sheetData = new SheetData();
-                    worksheetPart.Worksheet = new Worksheet(sheetData);
-
-                    Sheets sheets = workbookPart.Workbook.AppendChild(new Sheets());
-                    Sheet sheet = new Sheet() { Id = workbookPart.GetIdOfPart(worksheetPart), SheetId = 1, Name = "zestawienie" };
-
-                    sheets.Append(sheet);
-
-                    Row headerRow = new Row();
-                    List<String> columns = new List<string>();
-
-                    foreach (var r in new List<string> { "aaa", "bbb", "ccc", "ddd", "zzz" })
+                    r.Clear();
+                    r.Add(p.Wydzial?.Nazwa);
+                    r.Add(p.NrPersonalny);
+                    r.Add(RODO ? p.Imie : p.FullName);
+                    foreach (var k in kwalifikacje)
                     {
-                        columns.Add(r);
-
-                        Cell cell = new Cell();
-                        cell.DataType = CellValues.String;
-                        cell.CellValue = new CellValue(r);
-                        headerRow.AppendChild(cell);
+                        o = p.Oceny.Where(o => o.KwalifikacjaID == k.ID && o.DataDo == DateTime.MaxValue.Date).FirstOrDefault();
+                        r.Add(o == null ? "" : o.OcenaV.ToString());
                     }
-                    sheetData.AppendChild(headerRow);
-
-                    foreach (var t in new List<string> { "qq", "ww", "ee" })
-                    {
-                        Row newRow = new Row();
-                        foreach (String col in columns)
-                        {
-                            Cell cell = new Cell();
-                            cell.DataType = CellValues.String;
-                            cell.CellValue = new CellValue(t);
-                            newRow.AppendChild(cell);
-                        }
-
-                        sheetData.AppendChild(newRow);
-                    }
-
-                    
-                    mem.Seek(0, SeekOrigin.Begin);
-
-                    return new FileStreamResult(document.WorkbookPart.GetStream(), "application/ms-excel");
+                    data.DataRows.Add(r);
                 }
             }
+            var file = (new SLExcelWriter()).GenerateExcel(data);
+            Response.ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+            Response.Headers.Add("Content-Disposition",
+                                 $"attachment; filename=Oceny {DateTime.Now.ToShortDateString()}.xlsx");
+            return new FileContentResult(file, "application/xml");
         }
     }
 }

@@ -1,0 +1,7 @@
+﻿[*.{cs,vb}]
+
+# IDE0017: Uprość inicjowanie obiektów
+dotnet_style_object_initializer = true:none
+
+# IDE0044: Dodaj modyfikator tylko do odczytu
+dotnet_style_readonly_field = true:none

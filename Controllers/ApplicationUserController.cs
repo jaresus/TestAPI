@@ -75,7 +75,7 @@ namespace TestAPI.Controllers
                 var roleE = roleManager.RoleExistsAsync(role);
                 if (!roleE.Result)
                 {
-                    var x = await roleManager.CreateAsync(new IdentityRole(role));
+                    await roleManager.CreateAsync(new IdentityRole(role));
                 }
             }
             return !users;
@@ -92,9 +92,11 @@ namespace TestAPI.Controllers
                 //rola przypisana do użytkownika
                 var role = await userManager.GetRolesAsync(user);
                 IdentityOptions options = new IdentityOptions();
-                IList<Claim> claims = new List<Claim>();
-                claims.Add(new Claim("UserID", user.Id.ToString()));
-                foreach(var r in role)
+                IList<Claim> claims = new List<Claim>
+                {
+                    new Claim("UserID", user.Id.ToString())
+                };
+                foreach (var r in role)
                 {
                     claims.Add(new Claim(options.ClaimsIdentity.RoleClaimType, r));
                 }

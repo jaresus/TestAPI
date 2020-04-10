@@ -11,8 +11,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 using TestAPI.Models;
-using NPOI.XSSF.UserModel;
-using NPOI.SS.UserModel;
 using System.Data;
 
 namespace TestAPI.Controllers
@@ -30,71 +28,7 @@ namespace TestAPI.Controllers
             this.context = context;
             this.userManager = userManager;
         }
-        private class NpoiMemoryStream : MemoryStream
-        {
-            public NpoiMemoryStream()
-            {
-                // We always want to close streams by default to
-                // force the developer to make the conscious decision
-                // to disable it.  Then, they're more apt to remember
-                // to re-enable it.  The last thing you want is to
-                // enable memory leaks by default.  ;-)
-                AllowClose = true;
-            }
-            public bool AllowClose { get; set; }
-
-            public override void Close()
-            {
-                if (AllowClose)
-                    base.Close();
-            }
-        }
-
-        [HttpGet("download")]
-        public async Task<FileStreamResult> Download()
-        {
-            using (var fs = new NpoiMemoryStream())
-            {
-                fs.AllowClose = false;
-                IWorkbook workbook = new XSSFWorkbook();
-                ISheet excelSheet = workbook.CreateSheet("Zestawienie");
-
-                List<String> columns = new List<string>();
-                IRow row = excelSheet.CreateRow(0);
-                int columnIndex = 0;
-
-                foreach (var r in new List<string> { "aaa", "bbb", "ccc", "ddd", "zzz" })
-                {
-                    columns.Add(r);
-                    row.CreateCell(columnIndex).SetCellValue(r);
-                    columnIndex++;
-                }
-
-                int rowIndex = 1;
-                foreach (var t in new List<string> { "qq", "ww", "ee" })
-                {
-                    row = excelSheet.CreateRow(rowIndex);
-                    int cellIndex = 0;
-                    foreach (String col in columns)
-                    {
-                        row.CreateCell(cellIndex).SetCellValue(t.ToString());
-                        cellIndex++;
-                    }
-
-                    rowIndex++;
-                }
-                workbook.Write(fs);
-                fs.Flush();
-                fs.Seek(0, SeekOrigin.Begin);
-                
-                return new FileStreamResult(fs, "application/ms-excel")
-                {
-                    FileDownloadName = "Report.xlsx",
-                };
-            }
-        }
-
-
+     
 
         // GET: api/Oceny/detail/id
         [HttpGet("detail/{id}")]
@@ -270,7 +204,7 @@ namespace TestAPI.Controllers
                 //wyślij maila
                 return CreatedAtAction("GetOcena", new { id = model.ID }, model);
             }
-            return BadRequest();
+            //return BadRequest();
         }
 
 
