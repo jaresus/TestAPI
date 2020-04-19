@@ -8,6 +8,25 @@ using Newtonsoft.Json;
 
 namespace TestAPI.Models
 {
+    public class OcenaArchiwum
+    {
+        public int ID { get; set; }
+        public DateTime DataOd { get; set; }
+        public DateTime DataDo { get; set; }
+        public int OcenaV { get; set; }
+        public int PracownikID { get; set; }
+        public string Pracownik { get; set; }
+        public int KwalifikacjaID { get; set; }
+        public string Kwalifikacja { get; set; }
+        public string WprowadzajacyID { get; set; }
+        public string Wprowadzajacy { get; set; }
+        public DateTime StempelCzasu { get; set; }
+        public string Komentarz { get; set; }
+        public DateTime DataUsuniecia { get; set; }
+        public string UsuwajacyID { get; set; }
+        public string UsuwajacyNazwa { get; set; }
+        public string UsuniecieKomentarz { get; set; }
+    }
     public class Ocena
     {
 
@@ -21,7 +40,7 @@ namespace TestAPI.Models
             PracownikID     = ocena.PracownikID;
             KwalifikacjaID  = ocena.KwalifikacjaID;
             WprowadzajacyID = ocena.WprowadzajacyID;
-            StemelCzasu     = ocena.StemelCzasu;
+            StempelCzasu    = ocena.StempelCzasu;
             Komentarz       = ocena.Komentarz;
         }
         public Ocena()
@@ -48,10 +67,9 @@ namespace TestAPI.Models
         public Kwalifikacja Kwalifikacja { get; set; }
         public string WprowadzajacyID { get; set; }
         public ApplicationUser Wprowadzajacy { get; set; }
-        public DateTime StemelCzasu { get; set; }
+        public DateTime StempelCzasu { get; set; }
         public string Komentarz { get; set; }
     }
-
     public class Wydzial
     {
         public int ID { get; set; }

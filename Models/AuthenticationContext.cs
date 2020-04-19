@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using static TestAPI.Models.Ocena;
 
 namespace TestAPI.Models
 {
@@ -18,6 +19,7 @@ namespace TestAPI.Models
         public DbSet<Wydzial> Wydzialy { get; set; }
         public DbSet<KwalifikacjaWydzial> KwalifikacjeWydzialy { get; set; }
         public DbSet<PoczatkoweWydzialy> PoczatkoweWydzialy { get; set; }
+        public DbSet<OcenaArchiwum> OcenaArchiwum { get; set; }
 
         public AuthenticationContext(DbContextOptions options) : base(options)
         {
@@ -73,7 +75,7 @@ namespace TestAPI.Models
                 entity.Property(m => m.Name).HasMaxLength(85);
             });
             modelBuilder.Entity<IdentityUserClaim<string>>(entity =>
-            {              
+            {
                 entity.Property(m => m.Id).HasMaxLength(85);
                 entity.Property(m => m.UserId).HasMaxLength(85);
             });

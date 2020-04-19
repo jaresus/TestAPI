@@ -99,7 +99,7 @@ namespace OpenXMLExcel.SLExcelUtility
             foreach (var rowData in data.DataRows)
             {
                 cellIndex = 0;
-                row = new Row { RowIndex = ++rowIndex+20 };
+                row = new Row { RowIndex = ++rowIndex };
                 sheetData.AppendChild(row);
                 foreach (var callData in rowData)
                 {

@@ -22,25 +22,29 @@ namespace TestAPI.Controllers
         const string cKwalifikacja = "Kwalifikacja";
 
         public UserProfileController(UserManager<ApplicationUser> userManager,
-            AuthenticationContext context,
-            ILogger<UserProfileController> logger)
+                                     AuthenticationContext context,
+                                     ILogger<UserProfileController> logger)
         {
             this.userManager = userManager;
             this.context=context;
             this.logger = logger;
         }
+
         [HttpGet("InfoLastOperation{WprowadzajacyID}")]
         //GET : /api/UserProfile/InfoLastOperation
         public async Task<ActionResult<Object>> InfoLastOperation(string WprowadzajacyID)
         {
-            var oceny = await context.Oceny.Where(o => o.WprowadzajacyID == WprowadzajacyID)
-                .OrderByDescending(o => o.StemelCzasu).FirstOrDefaultAsync();
+            var oceny = await context
+                .Oceny.Where(o => o.WprowadzajacyID == WprowadzajacyID)
+                .OrderByDescending(o => o.StempelCzasu)
+                .FirstOrDefaultAsync();
             oceny.Kwalifikacja = await context.Kwalifikacje.FirstOrDefaultAsync(k => k.ID == oceny.KwalifikacjaID);
             oceny.Pracownik = await context.Pracownicy.FirstOrDefaultAsync(p => p.ID == oceny.PracownikID);
             return oceny;
         }
 
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,Kierownik")]
         //PUT : /api/UserProfile/id
         public async Task<IActionResult> PutUserProfile(string id, UserModelProfil profile)
         {
@@ -126,15 +130,10 @@ namespace TestAPI.Controllers
             return NoContent();
         }
 
-
         private bool ProfileExists(string id)
         {
             return userManager.Users.Any(e => e.Id == id);
         }
-
-
-
-
 
         [HttpGet]
         [Authorize]
@@ -152,8 +151,6 @@ namespace TestAPI.Controllers
         {
             return await Profile(id);
         }
-
-
 
         private async Task<ActionResult<UserModelProfil>> Profile(string id)
         {
@@ -185,7 +182,7 @@ namespace TestAPI.Controllers
         [HttpPost]
         [Authorize]
         [Route("UserProfile")]
-        //Post: /api.
+        //Post: /api.UserProfile
         public async Task<ActionResult<UserModelProfil>> SetUserProfile(UserModelProfil profile)
         {
             if (string.IsNullOrEmpty(profile.Id))
@@ -264,8 +261,8 @@ namespace TestAPI.Controllers
         }
 
         [HttpGet("UserProfiles")]
-        //[Authorize]
-        //GET : /api/UserProfiles
+        [Authorize]
+        //GET : /api/UserProfile/UserProfiles
         //[Route("UserProfiles")]
         public async Task<ActionResult<UserModelProfil[]>> GetUserProfiles()
         {

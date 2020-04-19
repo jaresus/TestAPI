@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using MatrycaKwalifikacji.ViewModels;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -57,6 +58,7 @@ namespace TestAPI.Controllers
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for
         // more details see https://aka.ms/RazorPagesCRUD.
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,Kierownik")]
         public async Task<IActionResult> PutWydzial(int id, Wydzial wydzial)
         {
             if (id != wydzial.ID)
@@ -89,6 +91,7 @@ namespace TestAPI.Controllers
         // To protect from overposting attacks, please enable the specific properties you want to bind to, for
         // more details see https://aka.ms/RazorPagesCRUD.
         [HttpPost]
+        [Authorize(Roles = "Admin,Kierownik")]
         public async Task<ActionResult<Wydzial>> PostWydzial(Wydzial wydzial)
         {
             _context.Wydzialy.Add(wydzial);
@@ -99,6 +102,7 @@ namespace TestAPI.Controllers
 
         // DELETE: api/Wydzialy/5
         [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin,Kierownik")]
         public async Task<ActionResult<Wydzial>> DeleteWydzial(int id)
         {
             var wydzial = await _context.Wydzialy.FindAsync(id);

@@ -22,47 +22,44 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using System.Net;
 using Microsoft.Net.Http.Headers;
+using Newtonsoft.Json;
 
 namespace TestAPI
 {
     public class Startup
     {
-        public IConfiguration Configuration { get; }
-
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
-
         }
 
-
+        public IConfiguration Configuration { get; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers();
-            //Inject AppSettings
+            services.AddControllers()
+                .AddNewtonsoftJson(o => o.SerializerSettings.ReferenceLoopHandling = ReferenceLoopHandling.Ignore)
+                .SetCompatibilityVersion(CompatibilityVersion.Version_3_0);
+
+            //dziêki DI bêdzi mo¿na u¿yæ w innej czêœci aplikacji
             services.Configure<ApplicationSettings>(Configuration.GetSection("ApplicationSettings"));
+
+            #region CORS
+            var allowOrigins = Configuration.GetSection("CORS-Settings:Allow-Origins").Get<string[]>();
             services.AddCors(o =>
                 o.AddPolicy("CorsPolicy", builder =>
                 {
-                    builder.WithOrigins(
-                        Configuration["ApplicationSettings:Client_URL"].ToString(),
-                        "http://192.168.0.107:4200",
-                        "http://192.168.0.108:4200",
-                        "http://192.168.0.120:4200",
-                        "http://127.0.0.1")
+                    builder
+                    .WithOrigins(allowOrigins)
+                    //.AllowAnyOrigin()
                     .AllowAnyHeader()
-                    .AllowAnyMethod()
-                    .AllowCredentials()
-                    .WithHeaders(HeaderNames.ContentType, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+                    .AllowAnyMethod();
                 }
             ));
-            services.AddMvc()
-                    .SetCompatibilityVersion(CompatibilityVersion.Version_3_0)
-                    .AddNewtonsoftJson(opt => opt.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore)
-                    ;
+            #endregion
 
+            #region Ustawienie po³¹czenia z baz¹ danych
             //Wersja dla MariaDB
             if (Environment.OSVersion.ToString().StartsWith("Unix"))
             {
@@ -87,12 +84,16 @@ namespace TestAPI
                         .ServerVersion(new Version(10, 4, 10), ServerType.MariaDb)));
                 Console.WriteLine("operating system Windows");
                 Console.WriteLine(Environment.OSVersion.ToString());
-
             }
+            #endregion
+
+            #region identywikacja
             services.AddIdentity<ApplicationUser, IdentityRole>()
                 .AddRoles<IdentityRole>()
                 .AddEntityFrameworkStores<AuthenticationContext>();
+            #endregion
 
+            #region parametry has³a
             IServiceCollection serviceCollection = services.Configure<IdentityOptions>(options =>
             {
                 options.Password.RequireDigit = false;
@@ -101,14 +102,18 @@ namespace TestAPI
                 options.Password.RequireUppercase = false;
                 options.Password.RequiredLength = 4;
             });
+            #endregion
+
             // using System.Net;
             services.Configure<ForwardedHeadersOptions>(options =>
             {
-                options.KnownProxies.Add(IPAddress.Parse("192.168.0.120:4200"));
-                options.KnownProxies.Add(IPAddress.Parse("192.168.0.108:4200"));
-                options.KnownProxies.Add(IPAddress.Parse("127.0.0.1:4200"));
+                foreach (var ip in allowOrigins)
+                    options.KnownProxies.Add(IPAddress.Parse(ip));
+                //options.KnownProxies.Add(IPAddress.Parse("127.0.0.1:4200"));
+
             });
 
+            #region autoryzacja za pomoc¹ JSON Web Tokens
             var key = Encoding.UTF8.GetBytes(Configuration["ApplicationSettings:JWT_Secret"].ToString());
             services.AddAuthentication(x =>
             {
@@ -129,65 +134,52 @@ namespace TestAPI
                     ClockSkew = TimeSpan.Zero
                 };
             });
+            #endregion
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+
             app.Use(async (ctx, next) =>
             {
+                #region pomocnicze logowanie
                 Console.WriteLine("Jarek test");
+                Console.WriteLine($"Request Method: {ctx.Request.Method}{Environment.NewLine}");
+                Console.WriteLine($"Request Scheme: {ctx.Request.Scheme}{Environment.NewLine}");
+                Console.WriteLine($"Request Path: {ctx.Request.Path}{Environment.NewLine}");
+                Console.WriteLine($"Request Headers:{Environment.NewLine}");
+
+                // Headers
+                foreach (var header in ctx.Request.Headers)
+                    Console.WriteLine($"{header.Key}: " + $"{header.Value}{Environment.NewLine}");
+
+                // Connection: RemoteIp
+                Console.WriteLine($"Request RemoteIp: {ctx.Connection.RemoteIpAddress}");
+                #endregion
+
                 await next();
                 if (ctx.Response.StatusCode == 204)
                 {
                     ctx.Response.ContentLength = 0;
                 }
             });
-            Console.WriteLine(env.EnvironmentName.ToString());
-            //przekierowanie nag³ówków -> aby dzia³a³o CORS
             app.UseForwardedHeaders(new ForwardedHeadersOptions
             {
                 ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
             });
-            app.Use(async (context, next) =>
-            {
-                // Request method, scheme, and path    
-                Console.WriteLine($"Request Method: {context.Request.Method}{Environment.NewLine}");
-                Console.WriteLine($"Request Scheme: {context.Request.Scheme}{Environment.NewLine}");
-                Console.WriteLine($"Request Path: {context.Request.Path}{Environment.NewLine}");
-                Console.WriteLine($"Request Headers:{Environment.NewLine}");
-
-                // Headers
-                foreach (var header in context.Request.Headers)
-                    Console.WriteLine($"{header.Key}: " + $"{header.Value}{Environment.NewLine}");
-
-                // Connection: RemoteIp
-                Console.WriteLine($"Request RemoteIp: {context.Connection.RemoteIpAddress}");
-                
-                await next();
-            });
-
-
-
-
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
             }
-            else
-            {
-                app.UseHsts();
-            }
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
             app.UseRouting();
             app.UseCors("CorsPolicy");
             app.UseAuthentication();
             app.UseAuthorization();
-
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
-
             });
         }
     }
