@@ -127,11 +127,14 @@ namespace TestAPI.Controllers
             await context.SaveChangesAsync();
             //usuń zbyteczne STANOWISKA
             var surplusStan = poczStan2.Except(poczStan1);
-            var poczStanDelete = surplusStan.Select(s => new PoczatkoweStanowiska
-            {
-                UserID = user.Id,
-                StanowiskoID = s
-            });
+            //var poczStanDelete = surplusStan.Select(s => new PoczatkoweStanowiska
+            //{
+            //    UserID = user.Id,
+            //    StanowiskoID = s
+            //});
+            var poczStanDelete = context.PoczatkoweStanowiska
+                .Where(s => s.UserID == user.Id && surplusStan.Contains(s.StanowiskoID));
+
             context.PoczatkoweStanowiska.RemoveRange(poczStanDelete);
             await context.SaveChangesAsync();
             #endregion
@@ -217,7 +220,7 @@ namespace TestAPI.Controllers
         {
             if (string.IsNullOrEmpty(profile.Id))
             {
-                return BadRequest( new { message = "Brak ID użytkownika!" });
+                return BadRequest(new { message = "Brak ID użytkownika!" });
             }
             var oldUser = await userManager.FindByIdAsync(profile.Id);
             await userManager.UpdateAsync(oldUser);
