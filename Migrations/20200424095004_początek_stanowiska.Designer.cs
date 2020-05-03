@@ -2,7 +2,6 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TestAPI.Models;
@@ -10,40 +9,39 @@ using TestAPI.Models;
 namespace TestAPI.Migrations
 {
     [DbContext(typeof(AuthenticationContext))]
-    [Migration("20200315213752_wydzialyPoczatkowe")]
-    partial class wydzialyPoczatkowe
+    [Migration("20200424095004_początek_stanowiska")]
+    partial class początek_stanowiska
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "3.1.2")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128)
-                .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                .HasAnnotation("ProductVersion", "3.1.3")
+                .HasAnnotation("Relational:MaxIdentifierLength", 64);
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
                 {
                     b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("varchar(85) CHARACTER SET utf8mb4")
+                        .HasMaxLength(85);
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.Property<string>("Name")
-                        .HasColumnType("nvarchar(256)")
+                        .HasColumnType("varchar(256) CHARACTER SET utf8mb4")
                         .HasMaxLength(256);
 
                     b.Property<string>("NormalizedName")
-                        .HasColumnType("nvarchar(256)")
-                        .HasMaxLength(256);
+                        .HasColumnType("varchar(85) CHARACTER SET utf8mb4")
+                        .HasMaxLength(85);
 
                     b.HasKey("Id");
 
                     b.HasIndex("NormalizedName")
                         .IsUnique()
-                        .HasName("RoleNameIndex")
-                        .HasFilter("[NormalizedName] IS NOT NULL");
+                        .HasName("RoleNameIndex");
 
                     b.ToTable("AspNetRoles");
                 });
@@ -53,17 +51,18 @@ namespace TestAPI.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                        .HasMaxLength(85);
 
                     b.Property<string>("ClaimType")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.Property<string>("ClaimValue")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.Property<string>("RoleId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("varchar(85) CHARACTER SET utf8mb4")
+                        .HasMaxLength(85);
 
                     b.HasKey("Id");
 
@@ -75,57 +74,58 @@ namespace TestAPI.Migrations
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUser", b =>
                 {
                     b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("varchar(85) CHARACTER SET utf8mb4")
+                        .HasMaxLength(85);
 
                     b.Property<int>("AccessFailedCount")
                         .HasColumnType("int");
 
                     b.Property<string>("ConcurrencyStamp")
                         .IsConcurrencyToken()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.Property<string>("Discriminator")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.Property<string>("Email")
-                        .HasColumnType("nvarchar(256)")
+                        .HasColumnType("varchar(256) CHARACTER SET utf8mb4")
                         .HasMaxLength(256);
 
                     b.Property<bool>("EmailConfirmed")
-                        .HasColumnType("bit");
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<bool>("LockoutEnabled")
-                        .HasColumnType("bit");
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<DateTimeOffset?>("LockoutEnd")
-                        .HasColumnType("datetimeoffset");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("NormalizedEmail")
-                        .HasColumnType("nvarchar(256)")
-                        .HasMaxLength(256);
+                        .HasColumnType("varchar(85) CHARACTER SET utf8mb4")
+                        .HasMaxLength(85);
 
                     b.Property<string>("NormalizedUserName")
-                        .HasColumnType("nvarchar(256)")
-                        .HasMaxLength(256);
+                        .HasColumnType("varchar(85) CHARACTER SET utf8mb4")
+                        .HasMaxLength(85);
 
                     b.Property<string>("PasswordHash")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.Property<string>("PhoneNumber")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.Property<bool>("PhoneNumberConfirmed")
-                        .HasColumnType("bit");
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("SecurityStamp")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.Property<bool>("TwoFactorEnabled")
-                        .HasColumnType("bit");
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("UserName")
-                        .HasColumnType("nvarchar(256)")
+                        .HasColumnType("varchar(256) CHARACTER SET utf8mb4")
                         .HasMaxLength(256);
 
                     b.HasKey("Id");
@@ -135,8 +135,7 @@ namespace TestAPI.Migrations
 
                     b.HasIndex("NormalizedUserName")
                         .IsUnique()
-                        .HasName("UserNameIndex")
-                        .HasFilter("[NormalizedUserName] IS NOT NULL");
+                        .HasName("UserNameIndex");
 
                     b.ToTable("AspNetUsers");
 
@@ -148,17 +147,18 @@ namespace TestAPI.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                        .HasMaxLength(85);
 
                     b.Property<string>("ClaimType")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.Property<string>("ClaimValue")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("varchar(85) CHARACTER SET utf8mb4")
+                        .HasMaxLength(85);
 
                     b.HasKey("Id");
 
@@ -170,17 +170,20 @@ namespace TestAPI.Migrations
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
                     b.Property<string>("LoginProvider")
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("varchar(85) CHARACTER SET utf8mb4")
+                        .HasMaxLength(85);
 
                     b.Property<string>("ProviderKey")
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("varchar(85) CHARACTER SET utf8mb4")
+                        .HasMaxLength(85);
 
                     b.Property<string>("ProviderDisplayName")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("varchar(85) CHARACTER SET utf8mb4")
+                        .HasMaxLength(85);
 
                     b.HasKey("LoginProvider", "ProviderKey");
 
@@ -192,10 +195,12 @@ namespace TestAPI.Migrations
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<string>", b =>
                 {
                     b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("varchar(85) CHARACTER SET utf8mb4")
+                        .HasMaxLength(85);
 
                     b.Property<string>("RoleId")
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("varchar(85) CHARACTER SET utf8mb4")
+                        .HasMaxLength(85);
 
                     b.HasKey("UserId", "RoleId");
 
@@ -207,16 +212,19 @@ namespace TestAPI.Migrations
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
                     b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("varchar(85) CHARACTER SET utf8mb4")
+                        .HasMaxLength(85);
 
                     b.Property<string>("LoginProvider")
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("varchar(85) CHARACTER SET utf8mb4")
+                        .HasMaxLength(85);
 
                     b.Property<string>("Name")
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("varchar(85) CHARACTER SET utf8mb4")
+                        .HasMaxLength(85);
 
                     b.Property<string>("Value")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.HasKey("UserId", "LoginProvider", "Name");
 
@@ -227,17 +235,16 @@ namespace TestAPI.Migrations
                 {
                     b.Property<int>("ID")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                        .HasColumnType("int");
 
                     b.Property<string>("Link")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.Property<string>("Nazwa")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.Property<string>("Opis")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.Property<int?>("WydzialID")
                         .HasColumnType("int");
@@ -247,6 +254,21 @@ namespace TestAPI.Migrations
                     b.HasIndex("WydzialID");
 
                     b.ToTable("Kwalifikacje");
+                });
+
+            modelBuilder.Entity("TestAPI.Models.KwalifikacjaStanowisko", b =>
+                {
+                    b.Property<int>("KwalifikacjaID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("StanowiskoID")
+                        .HasColumnType("int");
+
+                    b.HasKey("KwalifikacjaID", "StanowiskoID");
+
+                    b.HasIndex("StanowiskoID");
+
+                    b.ToTable("KwalifikacjeStanowiska");
                 });
 
             modelBuilder.Entity("TestAPI.Models.KwalifikacjaWydzial", b =>
@@ -268,17 +290,16 @@ namespace TestAPI.Migrations
                 {
                     b.Property<int>("ID")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("DataDo")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<DateTime>("DataOd")
-                        .HasColumnType("datetime2");
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("Komentarz")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.Property<int>("KwalifikacjaID")
                         .HasColumnType("int");
@@ -289,11 +310,11 @@ namespace TestAPI.Migrations
                     b.Property<int>("PracownikID")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("StemelCzasu")
-                        .HasColumnType("datetime2");
+                    b.Property<DateTime>("StempelCzasu")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("WprowadzajacyID")
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("varchar(85) CHARACTER SET utf8mb4");
 
                     b.HasKey("ID");
 
@@ -306,18 +327,73 @@ namespace TestAPI.Migrations
                     b.ToTable("Oceny");
                 });
 
+            modelBuilder.Entity("TestAPI.Models.OcenaArchiwum", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("DataDo")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("DataOd")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("DataUsuniecia")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Komentarz")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                    b.Property<string>("Kwalifikacja")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                    b.Property<int>("KwalifikacjaID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OcenaV")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Pracownik")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                    b.Property<int>("PracownikID")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StempelCzasu")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("UsuniecieKomentarz")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                    b.Property<string>("UsuwajacyID")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                    b.Property<string>("UsuwajacyNazwa")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                    b.Property<string>("Wprowadzajacy")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                    b.Property<string>("WprowadzajacyID")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                    b.HasKey("ID");
+
+                    b.ToTable("OcenaArchiwum");
+                });
+
             modelBuilder.Entity("TestAPI.Models.PoczatkoweWydzialy", b =>
                 {
                     b.Property<int>("ID")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                        .HasColumnType("int");
 
                     b.Property<string>("Typ")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.Property<string>("UserID")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.Property<int>("WydzialID")
                         .HasColumnType("int");
@@ -333,49 +409,78 @@ namespace TestAPI.Migrations
                 {
                     b.Property<int>("ID")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                        .HasColumnType("int");
 
                     b.Property<string>("Firma")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.Property<string>("Imie")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("Nazwisko")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.Property<string>("NrPersonalny")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                    b.Property<int>("StanowiskoID")
+                        .HasColumnType("int");
 
                     b.Property<int>("WydzialID")
                         .HasColumnType("int");
 
                     b.HasKey("ID");
 
+                    b.HasIndex("StanowiskoID");
+
                     b.HasIndex("WydzialID");
 
                     b.ToTable("Pracownicy");
+                });
+
+            modelBuilder.Entity("TestAPI.Models.Stanowisko", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Nazwa")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                    b.Property<string>("Opis")
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
+
+                    b.Property<DateTime>("Utworzono")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("Zmieniono")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("ID");
+
+                    b.ToTable("Stanowiska");
                 });
 
             modelBuilder.Entity("TestAPI.Models.Wydzial", b =>
                 {
                     b.Property<int>("ID")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                        .HasColumnType("int");
 
                     b.Property<int>("IDParent")
                         .HasColumnType("int");
 
                     b.Property<bool>("IsBrygada")
-                        .HasColumnType("bit");
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<string>("Nazwa")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                     b.Property<int>("Position")
                         .HasColumnType("int");
@@ -456,6 +561,21 @@ namespace TestAPI.Migrations
                         .HasForeignKey("WydzialID");
                 });
 
+            modelBuilder.Entity("TestAPI.Models.KwalifikacjaStanowisko", b =>
+                {
+                    b.HasOne("TestAPI.Models.Kwalifikacja", "Kwalifikacja")
+                        .WithMany("KwalifikacjaStanowisko")
+                        .HasForeignKey("KwalifikacjaID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TestAPI.Models.Stanowisko", "Stanowisko")
+                        .WithMany("KwalifikacjaStanowisko")
+                        .HasForeignKey("StanowiskoID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("TestAPI.Models.KwalifikacjaWydzial", b =>
                 {
                     b.HasOne("TestAPI.Models.Kwalifikacja", "Kwalifikacja")
@@ -501,6 +621,12 @@ namespace TestAPI.Migrations
 
             modelBuilder.Entity("TestAPI.Models.Pracownik", b =>
                 {
+                    b.HasOne("TestAPI.Models.Stanowisko", "Stanowisko")
+                        .WithMany("Pracownik")
+                        .HasForeignKey("StanowiskoID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("TestAPI.Models.Wydzial", "Wydzial")
                         .WithMany("Pracownicy")
                         .HasForeignKey("WydzialID")

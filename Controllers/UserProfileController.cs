@@ -112,6 +112,30 @@ namespace TestAPI.Controllers
 
             #endregion
 
+            #region dodaj - usuń STANOWISKA
+            var poczStan1 = profile.PoczatkoweStanowiska.Select(s => s.ID).ToArray();
+            var poczStan2 = context.PoczatkoweStanowiska
+                .Where(s => s.UserID == user.Id).Select(s => s.StanowiskoID).ToArray();
+            var missStan = poczStan1.Except(poczStan2);
+            var poczStanAdd = missStan
+                .Select(s => new PoczatkoweStanowiska
+                {
+                    UserID = user.Id,
+                    StanowiskoID = s
+                });
+            context.PoczatkoweStanowiska.AddRange(poczStanAdd);
+            await context.SaveChangesAsync();
+            //usuń zbyteczne STANOWISKA
+            var surplusStan = poczStan2.Except(poczStan1);
+            var poczStanDelete = surplusStan.Select(s => new PoczatkoweStanowiska
+            {
+                UserID = user.Id,
+                StanowiskoID = s
+            });
+            context.PoczatkoweStanowiska.RemoveRange(poczStanDelete);
+            await context.SaveChangesAsync();
+            #endregion
+
             try
             {
                 await context.SaveChangesAsync();
@@ -165,8 +189,13 @@ namespace TestAPI.Controllers
                 .AsEnumerable().Select(w => w.WydzialID).ToArray();
             var poczKwal = context.PoczatkoweWydzialy.Where(w => w.UserID == user.Id && w.Typ ==cKwalifikacja)
                 .AsEnumerable().Select(w => w.WydzialID).ToArray();
+            var poczStan = context.PoczatkoweStanowiska.Where(s => s.UserID == user.Id)
+                .AsEnumerable().Select(s => s.StanowiskoID).ToArray();
+
             var w = context.Wydzialy.AsEnumerable().Where(w => poczWydz.Contains(w.ID)).ToArray();
             var k = context.Wydzialy.AsEnumerable().Where(w => poczKwal.Contains(w.ID)).ToArray();
+            var s = context.Stanowiska.AsEnumerable().Where(s => poczStan.Contains(s.ID)).ToArray();
+
             return new UserModelProfil()
             {
                 Id=id,
@@ -175,7 +204,8 @@ namespace TestAPI.Controllers
                 Email = user.Email,
                 Role=roles.ToArray(),
                 PoczatkoweWydzialy = w,
-                PoczatkoweKwalifikacje = k
+                PoczatkoweKwalifikacje = k,
+                PoczatkoweStanowiska = s,
             };
         }
 
@@ -187,7 +217,7 @@ namespace TestAPI.Controllers
         {
             if (string.IsNullOrEmpty(profile.Id))
             {
-                return BadRequest("Brak ID użytkownika!");
+                return BadRequest( new { message = "Brak ID użytkownika!" });
             }
             var oldUser = await userManager.FindByIdAsync(profile.Id);
             await userManager.UpdateAsync(oldUser);
@@ -254,7 +284,30 @@ namespace TestAPI.Controllers
             });
             context.PoczatkoweWydzialy.RemoveRange(poczKwalDelete);
             await context.SaveChangesAsync();
+            #endregion
 
+            #region dodaj - usuń STANOWISKA
+            var poczStan1 = profile.PoczatkoweStanowiska.Select(s => s.ID).ToArray();
+            var poczStan2 = context.PoczatkoweStanowiska
+                .Where(s => s.UserID == oldUser.Id).Select(s => s.StanowiskoID).ToArray();
+            var missStan = poczStan1.Except(poczStan2);
+            var poczStanAdd = missStan
+                .Select(s => new PoczatkoweStanowiska
+                {
+                    UserID = oldUser.Id,
+                    StanowiskoID = s
+                });
+            context.PoczatkoweStanowiska.AddRange(poczStanAdd);
+            await context.SaveChangesAsync();
+            //usuń zbyteczne STANOWISKA
+            var surplusStan = poczStan2.Except(poczStan1);
+            var poczStanDelete = surplusStan.Select(s => new PoczatkoweStanowiska
+            {
+                UserID = oldUser.Id,
+                StanowiskoID = s
+            });
+            context.PoczatkoweStanowiska.RemoveRange(poczStanDelete);
+            await context.SaveChangesAsync();
             #endregion
 
             return Ok(profile);
@@ -269,6 +322,8 @@ namespace TestAPI.Controllers
             var wydzialy         = await context.Wydzialy.ToListAsync();
             var poczWydzialy     = await context.PoczatkoweWydzialy.Where(w => w.Typ == cWydzial).ToListAsync();
             var poczKwalifikacje = await context.PoczatkoweWydzialy.Where(k => k.Typ == cKwalifikacja).ToListAsync();
+            var stanowiska       = await context.Stanowiska.ToListAsync();
+            var poczStanowiska   = await context.PoczatkoweStanowiska.ToListAsync();
 
             var users = await userManager.Users.ToListAsync();
             var model = users.Select(u => new UserModelProfil
@@ -284,7 +339,11 @@ namespace TestAPI.Controllers
                       .ToArray(),
                 PoczatkoweKwalifikacje = wydzialy
                       .Where(w =>
-                        poczKwalifikacje.Where(k => k.UserID == u.Id).Select(q=> q.WydzialID).Contains(w.ID))
+                        poczKwalifikacje.Where(k => k.UserID == u.Id).Select(q => q.WydzialID).Contains(w.ID))
+                      .ToArray(),
+                PoczatkoweStanowiska = stanowiska
+                      .Where(s =>
+                        poczStanowiska.Where(p => p.UserID == u.Id).Select(q => q.StanowiskoID).Contains(s.ID))
                       .ToArray()
             });
             return Ok(model);

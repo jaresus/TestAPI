@@ -23,6 +23,7 @@ namespace TestAPI.Models
         public IList<string> Role { get; set; }
         public IList<Wydzial> PoczatkoweWydzialy { get; set; }
         public IList<Wydzial> PoczatkoweKwalifikacje { get; set; }
+        public IList<Stanowisko> PoczatkoweStanowiska { get; set; }
     }
     public class PoczatkoweWydzialy
     {
@@ -31,5 +32,12 @@ namespace TestAPI.Models
         public int WydzialID { get; set; }
         public Wydzial Wydzial { get; set; }
         public string Typ { get; set; }//Wydzial, Kwalifikacja
+    }
+    public class PoczatkoweStanowiska
+    {
+        public int ID { get; set; }
+        public string UserID { get; set; }
+        public int StanowiskoID { get; set; }
+        public Stanowisko Stanowisko { get; set; }
     }
 }

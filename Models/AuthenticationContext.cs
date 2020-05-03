@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using static TestAPI.Models.Ocena;
+using TestAPI.Models;
 
 namespace TestAPI.Models
 {
@@ -20,7 +21,10 @@ namespace TestAPI.Models
         public DbSet<KwalifikacjaWydzial> KwalifikacjeWydzialy { get; set; }
         public DbSet<PoczatkoweWydzialy> PoczatkoweWydzialy { get; set; }
         public DbSet<OcenaArchiwum> OcenaArchiwum { get; set; }
-
+        public DbSet<Stanowisko> Stanowiska { get; set; }
+        public DbSet<KwalifikacjaStanowisko> KwalifikacjeStanowiska { get; set; }
+        public DbSet<PoczatkoweStanowiska> PoczatkoweStanowiska { get; set; }
+        public DbSet<SzkolenieCel> SzkolenieCele { get; set; }
         public AuthenticationContext(DbContextOptions options) : base(options)
         {
 
@@ -34,18 +38,30 @@ namespace TestAPI.Models
                   .HasOne(p => p.Pracownik)
                   .WithMany(b => b.Oceny)
                   .OnDelete(DeleteBehavior.Restrict);
-            modelBuilder.Entity<KwalifikacjaWydzial>().HasKey(kw => new { kw.KwalifikacjaID, kw.WydzialID });
 
+            #region tabela bez klucza głównego - KwalifikacjaWydzial -
+            modelBuilder.Entity<KwalifikacjaWydzial>().HasKey(kw => new { kw.KwalifikacjaID, kw.WydzialID });
             modelBuilder.Entity<KwalifikacjaWydzial>()
                 .HasOne<Kwalifikacja>(kw => kw.Kwalifikacja)
                 .WithMany(s => s.KwalifikacjaWydzial)
                 .HasForeignKey(kw => kw.KwalifikacjaID);
-
-
             modelBuilder.Entity<KwalifikacjaWydzial>()
                 .HasOne<Wydzial>(kw => kw.Wydzial)
                 .WithMany(s => s.KwalifikacjaWydzial)
                 .HasForeignKey(kw => kw.WydzialID);
+            #endregion
+
+            #region tabela bez klucza głównego - KwalifikacjaStanowisko -
+            modelBuilder.Entity<KwalifikacjaStanowisko>().HasKey(kw => new { kw.KwalifikacjaID, kw.StanowiskoID });
+            modelBuilder.Entity<KwalifikacjaStanowisko>()
+                .HasOne<Kwalifikacja>(kw => kw.Kwalifikacja)
+                .WithMany(s => s.KwalifikacjaStanowisko)
+                .HasForeignKey(kw => kw.KwalifikacjaID);
+            modelBuilder.Entity<KwalifikacjaStanowisko>()
+                .HasOne<Stanowisko>(kw => kw.Stanowisko)
+                .WithMany(s => s.KwalifikacjaStanowisko)
+                .HasForeignKey(kw => kw.StanowiskoID);
+            #endregion        
 
             #region debian MariaDB
             // Shorten key length for Identity

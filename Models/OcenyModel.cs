@@ -8,6 +8,28 @@ using Newtonsoft.Json;
 
 namespace TestAPI.Models
 {
+    public class Stanowisko
+    {
+        public int ID { get; set; }
+        public string Nazwa { get; set; }
+        public string Opis { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime Utworzono { get; private set; }
+        public DateTime Zmieniono { get; private set; }
+        [JsonIgnore]
+        public IList<KwalifikacjaStanowisko> KwalifikacjaStanowisko { get; set; }
+        [JsonIgnore]
+        public ICollection<Pracownik> Pracownik { get; set; }
+
+    }
+    public class KwalifikacjaStanowisko
+    {
+        public int KwalifikacjaID { get; set; }
+        [JsonIgnore]
+        public Kwalifikacja Kwalifikacja { get; set; }
+        public int StanowiskoID { get; set; }        
+        public Stanowisko Stanowisko { get; set; }
+    }
     public class OcenaArchiwum
     {
         public int ID { get; set; }
@@ -94,7 +116,8 @@ namespace TestAPI.Models
         public string Link { get; set; }
         [JsonIgnore]
         public ICollection<Ocena> Oceny { get; set; }
-
+        [Display(Name = "Stanowisko")]
+        public IList<KwalifikacjaStanowisko> KwalifikacjaStanowisko { get; set; }
     }
     public class KwalifikacjaWydzial
     {
@@ -128,6 +151,17 @@ namespace TestAPI.Models
         {
             return Nazwisko + ", " + Imie;
         }
+        public int StanowiskoID { get; set; }
+        public Stanowisko Stanowisko { get; set; }
 
+    }    
+    public class SzkolenieCel
+    {
+        public int ID { get; set; }
+        public int WydzialID { get; set; }
+        public int KwalifikacjaID { get; set; }
+        public Wydzial Wydzial { get; set; }
+        public Kwalifikacja Kwalifikacja { get; set; }
+        public int Cel { get; set; }
     }
 }

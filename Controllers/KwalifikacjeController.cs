@@ -27,24 +27,36 @@ namespace TestAPI.Controllers
 
         // GET: api/Kwalifikacje
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Kwalifikacja>>> GetKwalifikacje()
+        public ActionResult<IEnumerable<IKwalifikacjaAPI>> GetKwalifikacje()
         {
-            return await context.Kwalifikacje
+            var kwal = context.Kwalifikacje
                 .Include(k => k.KwalifikacjaWydzial)
                 .ThenInclude(w => w.Wydzial)
-                .ToListAsync();
+                .Include(k => k.KwalifikacjaStanowisko)
+                .ThenInclude(s => s.Stanowisko)
+                .AsEnumerable();
+
+            return kwal.Select(k => new IKwalifikacjaAPI
+            {
+                ID=k.ID,
+                Link=k.Link,
+                Nazwa=k.Nazwa,
+                Opis=k.Opis,
+                Stanowisko = k.KwalifikacjaStanowisko.Select(s => s.Stanowisko).ToList(),
+                Wydzial = k.KwalifikacjaWydzial.Select(w => w.Wydzial).ToList()
+            }).ToList();
         }
 
         // GET: api/Kwalifikacje/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Kwalifikacja>> GetKwalifikacja(int id)
+        public async Task<ActionResult<IKwalifikacjaAPI>> GetKwalifikacja(int id)
         {
             var kwalifikacja = await context.Kwalifikacje
                 .FindAsync(id);
 
             if (kwalifikacja == null)
             {
-                return NotFound();
+                return NotFound(new { message = $"Nie znaleziono kwalifikacji o ID: {id}" });
             }
             await context.Entry(kwalifikacja).Collection(c => c.KwalifikacjaWydzial).LoadAsync();
             foreach (var w in kwalifikacja.KwalifikacjaWydzial)
@@ -52,7 +64,21 @@ namespace TestAPI.Controllers
                 await context.Entry(w).Reference(r => r.Wydzial).LoadAsync();
 
             }
-            return kwalifikacja;
+            await context.Entry(kwalifikacja).Collection(s => s.KwalifikacjaStanowisko).LoadAsync();
+            foreach (var s in kwalifikacja.KwalifikacjaStanowisko)
+            {
+                await context.Entry(s).Reference(r => r.Stanowisko).LoadAsync();
+            }
+
+            return new IKwalifikacjaAPI
+            {
+                ID = kwalifikacja.ID,
+                Link = kwalifikacja.Link,
+                Nazwa = kwalifikacja.Nazwa,
+                Opis = kwalifikacja.Opis,
+                Stanowisko = kwalifikacja.KwalifikacjaStanowisko.Select(s => s.Stanowisko).ToList(),
+                Wydzial = kwalifikacja.KwalifikacjaWydzial.Select(w => w.Wydzial).ToList()
+            };
         }
 
         // PUT: api/Kwalifikacje/5
@@ -60,14 +86,20 @@ namespace TestAPI.Controllers
         // more details see https://aka.ms/RazorPagesCRUD.
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin,Kierownik")]
-        public async Task<IActionResult> PutKwalifikacja(int id, Kwalifikacja kwalifikacja)
+        public async Task<IActionResult> PutKwalifikacja(int id, IKwalifikacjaAPI model)
         {
-            if (id != kwalifikacja.ID)
+            if (id != model.ID)
             {
                 return BadRequest();
             }
-            context.Entry(kwalifikacja).State = EntityState.Modified;
-
+            Kwalifikacja modelKonwersja = new Kwalifikacja
+            {
+                ID = model.ID,
+                Link = model.Link,
+                Nazwa = model.Nazwa,
+                Opis = model.Opis,
+            };
+            context.Entry(modelKonwersja).State = EntityState.Modified;
 
             try
             {
@@ -77,28 +109,44 @@ namespace TestAPI.Controllers
             {
                 if (!KwalifikacjaExists(id))
                 {
-                    return NotFound();
+                    return NotFound(new { message = $"Nie znaleziono ID: {model.ID.ToString()}" });
                 }
                 else
                 {
                     throw;
                 }
             }
-            //usuń poprzednie
-            var usun = context.KwalifikacjeWydzialy.Where(kw => kw.KwalifikacjaID == kwalifikacja.ID);
+            //usuń wszystkie poprzednie
+            var usun = context.KwalifikacjeWydzialy.Where(kw => kw.KwalifikacjaID == model.ID);
             context.KwalifikacjeWydzialy.RemoveRange(usun);
             context.SaveChanges();
-            // dodaj nowe
-            var kWydzial = kwalifikacja.KwalifikacjaWydzial.Select(r => r.WydzialID).ToArray();
+            // dodaj nowe wszystkie
+            var kWydzial = model.Wydzial.Select(r => r.ID).ToArray();
             var kwalifikacjaWydzial = context.Wydzialy.Where(w => kWydzial.Contains(w.ID))
                 .Select(q => new KwalifikacjaWydzial
                 {
                     WydzialID = q.ID,
-                    KwalifikacjaID=kwalifikacja.ID,
+                    KwalifikacjaID=model.ID,
                     Wydzial = q
                 }).ToArray();
             context.KwalifikacjeWydzialy.AddRange(kwalifikacjaWydzial);
             await context.SaveChangesAsync();
+
+            // stanowiska
+            var usunStanowiska = context.KwalifikacjeStanowiska.Where(kw => kw.KwalifikacjaID == model.ID);
+            context.KwalifikacjeStanowiska.RemoveRange(usunStanowiska);
+            await context.SaveChangesAsync();
+            //dodaj stanowiska 
+            var kStan = model.Stanowisko.Select(s=> s.ID).ToArray();
+            var kwalifikacjaStanowiska = context.Stanowiska.Where(s => kStan.Contains(s.ID))
+                .Select(q => new KwalifikacjaStanowisko
+                {
+                    KwalifikacjaID = model.ID,
+                    StanowiskoID = q.ID
+                }).ToArray();
+            context.KwalifikacjeStanowiska.AddRange(kwalifikacjaStanowiska);
+            await context.SaveChangesAsync();
+
             return NoContent();
         }
 
@@ -107,12 +155,20 @@ namespace TestAPI.Controllers
         // more details see https://aka.ms/RazorPagesCRUD.
         [HttpPost]
         [Authorize(Roles = "Admin,Kierownik")]
-        public async Task<ActionResult<Kwalifikacja>> PostKwalifikacja(Kwalifikacja kwalifikacja)
+        public async Task<ActionResult<Kwalifikacja>> PostKwalifikacja(IKwalifikacjaAPI model)
         {
-            var kWydzial = kwalifikacja.KwalifikacjaWydzial.Select(r => r.WydzialID).ToArray();
-            kwalifikacja.KwalifikacjaWydzial = null;
+            Kwalifikacja kwalifikacja = new Kwalifikacja
+            {
+                ID = model.ID,
+                Link = model.Link,
+                Nazwa = model.Nazwa,
+                Opis = model.Opis,
+            };
+
             var k = context.Kwalifikacje.Add(kwalifikacja);
             await context.SaveChangesAsync();
+
+            var kWydzial = model.Wydzial.Select(r => r.ID).ToArray();
             var kwalifikacjaWydzial = context.Wydzialy.Where(w => kWydzial.Contains(w.ID))
                 .Select(q => new KwalifikacjaWydzial
                 {
@@ -123,7 +179,35 @@ namespace TestAPI.Controllers
             context.KwalifikacjeWydzialy.AddRange(kwalifikacjaWydzial);
             await context.SaveChangesAsync();
 
-            return CreatedAtAction("GetKwalifikacja", new { id = kwalifikacja.ID }, kwalifikacja);
+            var kStanowisko = model.Stanowisko.Select(s => s.ID).ToArray();
+            var kwalifikacjaStanowisko = context.Stanowiska.Where(s => kStanowisko.Contains(s.ID))
+                .Select(q => new KwalifikacjaStanowisko
+                {
+                    KwalifikacjaID = kwalifikacja.ID,
+                    StanowiskoID = q.ID,
+                    Stanowisko = q
+                }).AsEnumerable();
+            context.KwalifikacjeStanowiska.AddRange(kwalifikacjaStanowisko);
+            await context.SaveChangesAsync();
+            #region usuń
+            //var kWydzial = mode.KwalifikacjaWydzial.Select(r => r.WydzialID).ToArray();
+            //kwalifikacja.KwalifikacjaWydzial = null;
+            //var k = context.Kwalifikacje.Add(kwalifikacja);
+            //await context.SaveChangesAsync();
+            //var kwalifikacjaWydzial = context.Wydzialy.Where(w => kWydzial.Contains(w.ID))
+            //    .Select(q => new KwalifikacjaWydzial
+            //    {
+            //        WydzialID = q.ID,
+            //        KwalifikacjaID=kwalifikacja.ID,
+            //        Wydzial = q
+            //    });
+            //context.KwalifikacjeWydzialy.AddRange(kwalifikacjaWydzial);
+            //await context.SaveChangesAsync();
+            #endregion
+            model.ID = kwalifikacja.ID;
+            model.Stanowisko = kwalifikacjaStanowisko.Select(s => s.Stanowisko).ToArray();
+            model.Wydzial = kwalifikacjaWydzial.Select(w => w.Wydzial).ToArray();
+            return CreatedAtAction("GetKwalifikacja", new { id = kwalifikacja.ID }, model);
         }
 
         // DELETE: api/Kwalifikacje/5
@@ -165,7 +249,6 @@ namespace TestAPI.Controllers
                     UsuwajacyNazwa = userL.FullName,
                     //Wprowadzajacy = userManager.FindByIdAsync(o.WprowadzajacyID).Result.FullName
                 }).AsEnumerable().ToList();
-                //var temp = ocenyArchiwum.ToList();
                 foreach (var o in ocenyArchiwum)
                 {
                     string fName ="";
@@ -182,6 +265,7 @@ namespace TestAPI.Controllers
                 context.Oceny.RemoveRange(oceny);
                 await context.SaveChangesAsync();
             }
+
             context.Kwalifikacje.Remove(kwalifikacja);
             await context.SaveChangesAsync();
 

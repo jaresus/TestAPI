@@ -11,7 +11,6 @@ namespace TestAPI.Models
         public int RowsCount { get; set; }
         public List<OcenaArchiwum> Items { get; set; }
     }
-
     public class OcenaListaAPI
     {
         public int PracownikID { get; set; }
@@ -20,7 +19,6 @@ namespace TestAPI.Models
         public IDKwalifikacjaOcenaAPI[] KwalifikacjaOcena { get; set; }
         public int Test { get; set; }
     }
-
     public class IDKwalifikacjaOcenaAPI
     {
         public int ID { get; set; }
@@ -39,7 +37,6 @@ namespace TestAPI.Models
         public int IDw { get; set; }
         public string Nazwa { get; set; }
     }
-
     public class IKwalifikacjaOcenyAPI 
     { 
         public int ID { get; set; }
@@ -62,5 +59,26 @@ namespace TestAPI.Models
         public string Wprowadzajacy { get; set; }
         public DateTime StempelCzasu { get; set; }
         public string Komentarz { get; set; }
+    }
+    public class IKwalifikacjaAPI
+    {
+        public int ID { get; set; }
+        public string Nazwa { get; set; }
+        public IList<Wydzial> Wydzial { get; set; }
+        public string Opis { get; set; }
+        public string Link { get; set; }
+        public IList<Stanowisko> Stanowisko { get; set; }
+    }
+    public class IKwalSzkolCel
+    {
+        public int KwalifikacjaID { get; set; }
+        public string Kwalifikacja { get; set; }
+        public int? Cel { get; set; }
+        public int Wartosc { get; set; }
+    }
+    public class ISzkoleniaAPI
+    {
+        public Wydzial Wydzial { get; set; }
+        public IList<IKwalSzkolCel> Items { get; set; }
     }
 }

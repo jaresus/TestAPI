@@ -52,7 +52,6 @@ namespace TestAPI
                 {
                     builder
                     .WithOrigins(allowOrigins)
-                    //.AllowAnyOrigin()
                     .AllowAnyHeader()
                     .AllowAnyMethod();
                 }

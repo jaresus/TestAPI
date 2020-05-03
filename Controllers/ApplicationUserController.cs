@@ -5,7 +5,6 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -61,8 +60,7 @@ namespace TestAPI.Controllers
             }
             catch (Exception ex)
             {
-
-                throw ex;
+                return BadRequest(new {message = ex.Message });
             }
         }
         private async Task<bool> FirstRegisterUser()
@@ -112,7 +110,7 @@ namespace TestAPI.Controllers
                 return Ok(new { token });
             }
             else
-                return BadRequest(new { message = "Username or password is incorrect." });
+                return BadRequest(new { message = "Nazwa użytkownika lub hasło są niepoprawne." });
         }
     }
 }

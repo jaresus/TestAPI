@@ -12,7 +12,6 @@ using Microsoft.EntityFrameworkCore;
 
 using TestAPI.Models;
 using System.Data;
-using static TestAPI.Models.Ocena;
 using Microsoft.AspNetCore.Authorization;
 
 namespace TestAPI.Controllers
@@ -72,7 +71,7 @@ namespace TestAPI.Controllers
         public async Task<ActionResult<IEnumerable<OcenaAPI>>> GetOcenyAktywnosc()
         {
             string userId = User.Claims.First(c => c.Type == "UserID").Value;
-            if(userId == "")
+            if (userId == "")
             {
                 return NotFound();
             }
@@ -116,32 +115,44 @@ namespace TestAPI.Controllers
 
         // GET: api/Oceny/byDepartment/?
         [HttpGet("byDepartment")]
-        public async Task<ActionResult<IEnumerable<OcenaListaAPI>>> GetOcenybyDepartment([FromQuery] int[] p/*,*/
-                                                                                         /*[FromQuery] int[] k*/)
+        public async Task<ActionResult<IEnumerable<OcenaListaAPI>>> GetOcenybyDepartment([FromQuery] int[] p,
+                                                                                         [FromQuery] int[] k,
+                                                                                         [FromQuery] int[] s)
         {
             int[] pracownicy = p;
-            //int[] kompetencje = k;
-
+            int[] kompetencje = k;
+            int[] stanowiska = s;
+            //var zalogowany = false;
+            //var userID = User.Claims.First(c => c.Type == "UserID").Value;
+            //var u = await userManager.FindByIdAsync(userID);
+            bool zalogowany = User.Identity.IsAuthenticated;
+            
             //lista techniczna: jakie kwalifikacje wyświetlać
-            //var listaKwalifikacji = context.Kwalifikacje
-            //    .Include(q => q.KwalifikacjaWydzial)
-            //    .Where(q => q.KwalifikacjaWydzial.Any(w => kompetencje.Contains(w.WydzialID)))
-            //    .Select(k => k.ID)
-            //    .ToList();
+            var listaKwalifikacji = context.Kwalifikacje
+                .Include(q => q.KwalifikacjaWydzial)
+                .Include(q => q.KwalifikacjaStanowisko)
+                .Where(q => q.KwalifikacjaWydzial.Any(w => kompetencje.Contains(w.WydzialID)))
+                .Where(q => q.KwalifikacjaStanowisko.Any(w => stanowiska.Contains(w.StanowiskoID)))
+                .Select(k => k.ID)
+                .ToList();
             //uwzględnij pracowników z działów zagnieżdżonych
 
-            var oceny = await context.Pracownicy.OrderBy(p => p.Nazwisko)
+            var oceny = await context.Pracownicy
+                .OrderBy(p => p.Nazwisko)
                 .Include(o => o.Oceny)
                 .Where(p => p.IsActive)
-                .Where (p => pracownicy.Contains(p.WydzialID))
+                .Where (p => pracownicy.Contains(p.WydzialID) && stanowiska.Contains(p.StanowiskoID))
                 .Select(p => new OcenaListaAPI
                 {
                     PracownikID = p.ID,
                     NrPersonalny = p.NrPersonalny,
-                    Pracownik = p.Nazwisko + ", " + p.Imie,
+                    Pracownik = zalogowany ? p.Nazwisko + ", " + p.Imie : p.Imie,
                     Test = p.Oceny.Count(),
                     KwalifikacjaOcena = p.Oceny
-                        .Where(o => o.DataDo.Value.Year == 9999)
+                        .Where(o =>
+                          o.DataDo.Value.Year == 9999
+                          && listaKwalifikacji.Contains(o.KwalifikacjaID)
+                        )
                         //.Where(o => listaKwalifikacji.Contains(o.KwalifikacjaID))
                         .Select(o => new IDKwalifikacjaOcenaAPI
                         {
@@ -160,7 +171,6 @@ namespace TestAPI.Controllers
             {
                 return NotFound();
             }
-            Console.WriteLine("gotowe");
             return oceny;
         }
         // PUT: api/Oceny/5

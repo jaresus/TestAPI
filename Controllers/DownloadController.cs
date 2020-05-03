@@ -107,7 +107,7 @@ namespace TestAPI.Controllers
             var file = (new SLExcelWriter()).GenerateExcel(data);
             //Response.ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
-            Response.Headers.Add("Content-Disposition", $"attachment; filename=Oceny {DateTime.Now.ToShortDateString()}.xlsx");
+            Response.Headers.Add("Content-Disposition", $"attachment; filename=Oceny {DateTime.Now:yyyy-MM-dd}.xlsx");
             Response.Headers.Add("Access-Control-Expose-Headers", "content-disposition");
             return new FileContentResult(file, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
         }
@@ -127,7 +127,14 @@ namespace TestAPI.Controllers
                 foreach (var p in row.GetType().GetProperties())
                 {
                     if (first) { data.Headers.Add(p.Name); }
-                    r.Add(p.GetValue(row, null).ToString()) ;
+                    if (p.GetValue(row, null) != null)
+                    {
+                        r.Add(p.GetValue(row, null).ToString());
+                    }
+                    else
+                    {
+                        r.Add("");
+                    }
                 }
                 data.DataRows.Add(r);
                 first=false;
@@ -135,7 +142,7 @@ namespace TestAPI.Controllers
             var file = (new SLExcelWriter()).GenerateExcel(data);
             //Response.ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
-            Response.Headers.Add("Content-Disposition", $"attachment; filename=Archiwum {DateTime.Now.ToShortDateString()}.xlsx");
+            Response.Headers.Add("Content-Disposition", $"attachment; filename=Archiwum {DateTime.Now:yyyy-MM-dd}.xlsx");
             Response.Headers.Add("Access-Control-Expose-Headers", "content-disposition");
             return new FileContentResult(file, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 
